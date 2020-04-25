@@ -21,7 +21,7 @@ export const logger = createLogger({
     format: format.combine(
         format.colorize(),
         format.timestamp(),
-        winston.format.printf(({level, message, label, timestamp}) => {
+        winston.format.printf(({level, message, _, timestamp}) => {
             return `${level}${level.match(/(warn|info)/) ? "  " : " "}${timestamp}: ${message}`;
         })
     ),
@@ -68,26 +68,30 @@ function searchCommand(msg: string): Command | undefined {
 
     commands.forEach(command => {
         if (msg.match(command.entryRegex)) {
-            rCommand = command
+            rCommand = command;
         }
     });
 
     return rCommand;
 }
 
+client.on('ready', () => {
+    client.user?.setActivity('"밤준아 도움"을 입력해봐!');
+});
+
 client.on('message', msg => {
     if (msg.author.bot) return;
-    // If message starts with '밤' or '밤준아'
     if (msg.content.match(/^(밤[^준]|밤준아)/)) {
         // Find command that matches regex
         let command = searchCommand(msg.content);
 
         if (command === undefined) {
-            // When didn't find command, notify help.
             msg.reply('알 수 없는 명령입니다. 도움말을 보려면 `밤준아 도움`을 입력하세요.')
-                .then(r => logger.debug(`C req @${msg.author.id} ${msg.content} not exists`));
+                .then(r => logger.debug(`help message sent #${r.channel.id} $${r.id}`))
+                .catch(r => logger.info(`Failed to send message to #${msg.channel.id}: ${r}`));
+
+            logger.debug(`C req @${msg.author.id} ${msg.content} not exists`);
         } else {
-            // When command found, run command.
             command.execute(msg)
         }
     }
